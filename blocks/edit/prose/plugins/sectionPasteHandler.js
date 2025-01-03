@@ -11,6 +11,15 @@ function closeParagraph(paraContent, newContent) {
   }
 }
 
+function isURL(text) {
+  try {
+    new URL(text);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 /**
  * Find section breaks in HTML pasted from desktop Word and add a horizontal rule
  * after each one.
@@ -98,17 +107,22 @@ export default function sectionPasteHandler(schema) {
       },
 
       /* Convert 3 dashes on a line by itself (top level only) to a horizontal rule,
-       * which is then interpreted as a section break.
+       * which is then interpreted as a section break. Also handle multi-line links.
        */
       transformPasted: (slice) => {
         const jslice = slice.toJSON();
         if (!jslice) return slice;
         const { content } = jslice;
-        if (!content) return slice;
+        if (!content || !Array.isArray(content)) return slice;
 
         const newContent = [];
 
         for (const el of content) {
+          if (!el.content || !Array.isArray(el.content)) {
+            newContent.push(el);
+            continue;
+          }
+
           if (el.type !== 'paragraph') {
             newContent.push(el);
           } else {
@@ -119,10 +133,30 @@ export default function sectionPasteHandler(schema) {
                 newParaCont.push(pc);
               } else if (pc.text.trim() === '---') {
                 closeParagraph(newParaCont, newContent);
-
                 newContent.push({ type: 'horizontal_rule' });
               } else {
-                newParaCont.push(pc);
+                // Handle potential URLs in the text
+                const text = pc.text;
+                const words = text.split(/(\s+)/);
+                
+                for (const word of words) {
+                  if (word.trim().length > 0) { // Only add non-whitespace text nodes
+                    if (isURL(word.trim())) {
+                      newParaCont.push({
+                        type: 'text',
+                        text: word,
+                        marks: [{
+                          type: 'link',
+                          attrs: { href: word.trim() }
+                        }]
+                      });
+                    } else {
+                      newParaCont.push({ type: 'text', text: word });
+                    }
+                  } else if (word.length > 0) { // Preserve whitespace nodes
+                    newParaCont.push({ type: 'text', text: word });
+                  }
+                }
               }
             }
 

@@ -18,7 +18,6 @@ export default function linkConverter(schema) {
                 const { from } = view.state.selection;
                 let tr = view.state.tr;
                 let currentPosition = from;
-                const startPosition = currentPosition;
 
                 // Processing each block (paragraph) in the pasted content
                 slice.content.forEach((block) => {
@@ -32,29 +31,31 @@ export default function linkConverter(schema) {
                     const parts = text.split(/(\s+)/);
                     
                     parts.forEach(part => {
-                        if (part.trim() === '') {
-                            // Handle whitespace
-                            tr = tr.insert(currentPosition, schema.text(part));
-                            currentPosition += part.length;
-                        } else {
-                            // Insert the text
-                            tr = tr.insert(currentPosition, schema.text(part));
-                            
-                            // If it's a URL, add the link mark
-                            if (isURL(part)) {
-                                const linkMark = schema.marks.link.create({ href: part });
-                                tr = tr.addMark(currentPosition, currentPosition + part.length, linkMark);
+                        if (part.length > 0) { // Only process non-empty parts
+                            if (part.trim() === '') {
+                                // Handle whitespace
+                                tr = tr.insert(currentPosition, schema.text(part));
+                                currentPosition += part.length;
+                            } else {
+                                // Insert the text
+                                tr = tr.insert(currentPosition, schema.text(part));
+                                
+                                // If it's a URL, add the link mark
+                                if (isURL(part)) {
+                                    const linkMark = schema.marks.link.create({ href: part });
+                                    tr = tr.addMark(currentPosition, currentPosition + part.length, linkMark);
+                                }
+                                
+                                currentPosition += part.length;
                             }
-                            
-                            currentPosition += part.length;
                         }
                     });
                 });
 
                 // Set the selection to the end of the inserted content
                 tr = tr.setSelection(view.state.selection.constructor.near(
-                  tr.doc.resolve(currentPosition)
-              ));
+                    tr.doc.resolve(currentPosition)
+                ));
 
                 view.dispatch(tr);
                 return true;
