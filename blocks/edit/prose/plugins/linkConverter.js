@@ -15,6 +15,27 @@ export default function linkConverter(schema) {
     return new Plugin({
         props: {
             handlePaste: (view, event, slice) => {
+                // Check if the slice contains only text content
+                let hasOnlyText = true;
+                let hasContent = false;
+
+                slice.content.forEach(block => {
+                    if (block.type !== schema.nodes.paragraph) {
+                        hasOnlyText = false;
+                    }
+                    block.content?.forEach(node => {
+                        hasContent = true;
+                        if (node.type !== schema.nodes.text) {
+                            hasOnlyText = false;
+                        }
+                    });
+                });
+
+                // If not text content or empty, let other handlers process it
+                if (!hasOnlyText || !hasContent) {
+                    return false;
+                }
+
                 const { from } = view.state.selection;
                 let tr = view.state.tr;
                 let currentPosition = from;
