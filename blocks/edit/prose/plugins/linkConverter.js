@@ -15,14 +15,11 @@ export default function linkConverter(schema) {
     return new Plugin({
         props: {
             handlePaste: (view, event, slice) => {
-                console.log(`Handling paste event with slice: ${slice}`);
-                console.log('slice', slice);
-                
                 const { from } = view.state.selection;
                 let tr = view.state.tr;
                 let currentPosition = from;
 
-                // Process each block (paragraph) in the pasted content
+                // Processing each block (paragraph) in the pasted content
                 slice.content.forEach((block) => {
                     // Create a new paragraph node for each block
                     const paragraphNode = schema.nodes.paragraph.create();
