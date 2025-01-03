@@ -2,39 +2,59 @@
 import { Plugin } from 'da-y-wrapper';
 
 function isURL(text) {
-  try {
-    // eslint-disable-next-line no-new
-    new URL(text);
-    return true;
-  } catch (e) {
-    return false;
-  }
+    try {
+        // eslint-disable-next-line no-new
+        new URL(text);
+        return true;
+    } catch (e) {
+        return false;
+    }
 }
 
 export default function linkConverter(schema) {
-  return new Plugin({
-    props: {
-      handlePaste: (view, event, slice) => {
-        if (slice.content.content.length !== 1 // there needs to be only one line
-          || slice.content.content[0].content.content.length !== 1 // only one element needed
-          || slice.content.content[0].content.content[0].type.name !== 'text' // the only element is text
-          || !isURL(slice.content.content[0].content.content[0].text)) {
-          return false;
-        }
+    return new Plugin({
+        props: {
+            handlePaste: (view, event, slice) => {
+                console.log(`Handling paste event with slice: ${slice}`);
+                
+                const { from } = view.state.selection;
+                let tr = view.state.tr;
+                let currentPosition = from;
 
-        const linkMark = schema.marks.link.create(
-          { href: slice.content.content[0].content.content[0].text },
-        );
-        const { from } = view.state.selection;
-        const { size } = slice.content.content[0].content;
+                // Process each block (paragraph) in the pasted content
+                slice.content.forEach((block) => {
+                    // Create a new paragraph node for each block
+                    const paragraphNode = schema.nodes.paragraph.create();
+                    tr = tr.insert(currentPosition, paragraphNode);
+                    currentPosition += 2; // Move past paragraph opening
 
-        const addLinkMark = view.state.tr
-          .insert(from, slice.content.content[0].content)
-          .addMark(from, from + size, linkMark);
-        view.dispatch(addLinkMark);
+                    const text = block.textContent;
+                    // Split by whitespace but preserve the whitespace
+                    const parts = text.split(/(\s+)/);
+                    
+                    parts.forEach(part => {
+                        if (part.trim() === '') {
+                            // Handle whitespace
+                            tr = tr.insert(currentPosition, schema.text(part));
+                            currentPosition += part.length;
+                        } else {
+                            // Insert the text
+                            tr = tr.insert(currentPosition, schema.text(part));
+                            
+                            // If it's a URL, add the link mark
+                            if (isURL(part)) {
+                                const linkMark = schema.marks.link.create({ href: part });
+                                tr = tr.addMark(currentPosition, currentPosition + part.length, linkMark);
+                            }
+                            
+                            currentPosition += part.length;
+                        }
+                    });
+                });
 
-        return true;
-      },
-    },
-  });
+                view.dispatch(tr);
+                return true;
+            },
+        },
+    });
 }
