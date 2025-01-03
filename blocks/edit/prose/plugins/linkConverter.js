@@ -16,6 +16,7 @@ export default function linkConverter(schema) {
         props: {
             handlePaste: (view, event, slice) => {
                 console.log(`Handling paste event with slice: ${slice}`);
+                console.log('slice', slice);
                 
                 const { from } = view.state.selection;
                 let tr = view.state.tr;
