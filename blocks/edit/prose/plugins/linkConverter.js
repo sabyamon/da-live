@@ -18,6 +18,7 @@ export default function linkConverter(schema) {
                 const { from } = view.state.selection;
                 let tr = view.state.tr;
                 let currentPosition = from;
+                const startPosition = currentPosition;
 
                 // Processing each block (paragraph) in the pasted content
                 slice.content.forEach((block) => {
@@ -49,6 +50,11 @@ export default function linkConverter(schema) {
                         }
                     });
                 });
+
+                // Set the selection to the end of the inserted content
+                tr = tr.setSelection(view.state.selection.constructor.near(
+                  tr.doc.resolve(currentPosition)
+              ));
 
                 view.dispatch(tr);
                 return true;
