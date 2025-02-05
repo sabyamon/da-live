@@ -11,6 +11,7 @@
  */
 
 import { setNx, codeBase, decorateArea } from './utils.js';
+import initFeedbackBot from '../../blocks/feedback/feedback.js';
 
 const nx = setNx('/nx');
 const STYLES = '/styles/styles.css';
@@ -45,6 +46,10 @@ function loadStyles() {
   });
 }
 
+async function loadFeedbackBot() {
+  await initFeedbackBot(document);
+}
+
 export default async function loadPage() {
   await loadArea();
 }
@@ -52,6 +57,7 @@ export default async function loadPage() {
 loadStyles();
 decorateArea();
 loadPage();
+loadFeedbackBot();
 
 // Side-effects
 (async function loadDa() {
